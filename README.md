@@ -1,0 +1,638 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>Coupon Register</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chivo+Mono:wght@500;600&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* Layout: a sticky control strip above a long list of ticket stubs. Each row is one numbered stub with a perforated edge beside the number. */
+:root {
+  --bg: #edf0f4;
+  --surface: #ffffff;
+  --ink: #131c28;
+  --muted: #5b6878;
+  --line: #d3d9e2;
+  --lock: #e7ebf1;
+  --accent: #0b6b63;
+  --accent-ink: #ffffff;
+  --accent-soft: #d9efec;
+  --warn: #8a4b08;
+  --warn-bg: #fdf0d2;
+  --danger: #b3261e;
+  --scrim: rgba(10, 16, 24, 0.55);
+  --font-body: 'Figtree', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'Chivo Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  --hdr: 150px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e141b;
+    --surface: #172029;
+    --ink: #e6ebf1;
+    --muted: #94a2b3;
+    --line: #2a3643;
+    --lock: #1e2933;
+    --accent: #4fd1c1;
+    --accent-ink: #05211e;
+    --accent-soft: #14393a;
+    --warn: #f0b35a;
+    --warn-bg: #3a2c10;
+    --danger: #ff8a80;
+    --scrim: rgba(0, 0, 0, 0.65);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e141b;
+  --surface: #172029;
+  --ink: #e6ebf1;
+  --muted: #94a2b3;
+  --line: #2a3643;
+  --lock: #1e2933;
+  --accent: #4fd1c1;
+  --accent-ink: #05211e;
+  --accent-soft: #14393a;
+  --warn: #f0b35a;
+  --warn-bg: #3a2c10;
+  --danger: #ff8a80;
+  --scrim: rgba(0, 0, 0, 0.65);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.4;
+  padding-block: 0 2rem;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0 0 auto;
+  height: env(safe-area-inset-top, 0px);
+  background: var(--bg);
+  z-index: 10;
+}
+.wrap { max-width: 64rem; margin: 0 auto; }
+
+header {
+  position: sticky;
+  top: env(safe-area-inset-top, 0px);
+  z-index: 5;
+  background: var(--bg);
+  padding-block: 0.85rem 0.6rem;
+  border-bottom: 1px solid var(--line);
+  display: grid;
+  gap: 0.55rem;
+}
+.titlebar { display: flex; align-items: baseline; justify-content: space-between; gap: 0.75rem; flex-wrap: wrap; }
+h1 { margin: 0; font-size: 1.3rem; font-weight: 700; letter-spacing: -0.01em; text-wrap: balance; }
+.range { font-family: var(--font-mono); font-size: 0.85rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.stats { display: flex; justify-content: space-between; gap: 0.75rem; flex-wrap: wrap; font-size: 0.875rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.stats b { color: var(--ink); font-weight: 600; }
+#sync { font-size: 0.75rem; letter-spacing: 0.06em; text-transform: uppercase; }
+.bar { height: 4px; background: var(--line); border-radius: 2px; overflow: hidden; }
+.bar i { display: block; height: 100%; width: 0; background: var(--accent); }
+.controls { display: flex; gap: 0.5rem; }
+.controls input[type="search"] { flex: 1; min-width: 0; }
+.controls #jump { width: 6.25rem; flex: none; font-family: var(--font-mono); }
+.chips { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+.chip, .toolbtn {
+  font: inherit; font-size: 0.8125rem; font-weight: 500;
+  padding: 0.3rem 0.7rem; border-radius: 6px;
+  border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+  cursor: pointer; font-variant-numeric: tabular-nums;
+}
+.tools { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+.chip[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+
+input[type="text"], input[type="tel"], input[type="search"], input[type="password"] {
+  width: 100%; height: 2.6rem;
+  font: inherit; font-size: 16px; color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line); border-radius: 6px;
+  padding: 0 0.65rem;
+}
+input::placeholder { color: var(--muted); opacity: 0.8; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.note, .none {
+  margin: 0.75rem 0 0; padding: 0.55rem 0.75rem;
+  border-radius: 6px; font-size: 0.875rem;
+  background: var(--warn-bg); color: var(--warn);
+}
+.none { background: var(--surface); color: var(--muted); border: 1px solid var(--line); text-align: center; padding: 1.5rem; }
+
+#list { display: flex; flex-direction: column; gap: 0.5rem; padding-top: 0.75rem; }
+.row {
+  display: grid; gap: 0.5rem 0.75rem;
+  grid-template-columns: 1fr 1fr;
+  grid-template-areas: "stub acts" "name name" "phone coupon" "warn warn";
+  padding: 0.75rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 11rem;
+  scroll-margin-top: calc(var(--hdr) + 8px);
+}
+.row.done { border-color: var(--accent); }
+.stub { grid-area: stub; display: flex; align-items: center; gap: 0.6rem; min-height: 2.6rem; }
+.tick { display: flex; align-items: center; gap: 0.65rem; cursor: pointer; }
+.tick input { width: 1.6rem; height: 1.6rem; margin: 0; accent-color: var(--accent); cursor: pointer; flex: none; }
+.num { font-family: var(--font-mono); font-weight: 600; font-size: 1.25rem; font-variant-numeric: tabular-nums; letter-spacing: 0.02em; }
+.row.done .num { color: var(--accent); }
+.lock { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+.f { min-width: 0; }
+.f label { display: block; font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.2rem; }
+.f-name { grid-area: name; } .f-phone { grid-area: phone; } .f-coupon { grid-area: coupon; }
+.f-coupon input { font-family: var(--font-mono); }
+.f-phone input { font-variant-numeric: tabular-nums; }
+.row.locked input[type="text"], .row.locked input[type="tel"] { background: var(--lock); border-color: transparent; }
+.acts { grid-area: acts; display: flex; justify-content: flex-end; align-items: center; gap: 0.5rem; }
+.warn { grid-area: warn; margin: 0; padding: 0.35rem 0.6rem; border-radius: 4px; font-size: 0.8125rem; background: var(--warn-bg); color: var(--warn); }
+
+.btn {
+  font: inherit; font-size: 0.9375rem; font-weight: 600;
+  height: 2.6rem; padding: 0 1.1rem; border-radius: 6px;
+  border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+  cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
+}
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn:disabled { opacity: 0.6; cursor: default; }
+
+@media (min-width: 760px) {
+  .row {
+    grid-template-columns: 8.5rem 1.4fr 1fr 1fr 10.5rem;
+    grid-template-areas: "stub name phone coupon acts" "warn warn warn warn warn";
+    align-items: end;
+    contain-intrinsic-size: auto 5.5rem;
+  }
+  .stub { border-right: 2px dashed var(--line); padding-right: 0.75rem; }
+}
+
+.scrim {
+  position: fixed; inset: 0; z-index: 20; background: var(--scrim);
+  display: grid; place-items: center;
+  padding: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) max(16px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
+}
+.dlg { width: min(22rem, 100%); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 1.25rem; display: grid; gap: 0.6rem; }
+.dlg h2 { margin: 0; font-size: 1.1rem; }
+.dlg p { margin: 0; color: var(--muted); font-size: 0.875rem; }
+.dlg label { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+.dlg .err { color: var(--danger); font-weight: 600; }
+.dlgacts { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 0.4rem; }
+
+.toast {
+  position: fixed; left: 50%; transform: translateX(-50%);
+  bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+  z-index: 30; max-width: calc(100% - 32px);
+  background: var(--ink); color: var(--bg);
+  padding: 0.6rem 1rem; border-radius: 6px; font-size: 0.875rem; font-weight: 500;
+}
+
+@keyframes flash { from { box-shadow: 0 0 0 3px var(--accent); } to { box-shadow: 0 0 0 3px transparent; } }
+.row.flash { animation: flash 1.4s ease-out; }
+@media (prefers-reduced-motion: reduce) { .row.flash { animation: none; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header id="hdr">
+    <div class="titlebar">
+      <h1>Coupon Register</h1>
+      <span class="range">0001 – 1000</span>
+    </div>
+    <div class="stats">
+      <span id="stText">Loading entries…</span>
+      <span id="sync">Loading</span>
+    </div>
+    <div class="bar" aria-hidden="true"><i id="barFill"></i></div>
+    <div class="controls">
+      <input id="q" type="search" placeholder="Search name, phone or coupon" aria-label="Search entries" autocomplete="off">
+      <input id="jump" type="text" inputmode="numeric" maxlength="4" placeholder="Go to #" aria-label="Go to number" autocomplete="off">
+    </div>
+    <div class="chips" role="group" aria-label="Show">
+      <button class="chip" type="button" data-f="all" aria-pressed="true">All <span id="cAll">1000</span></button>
+      <button class="chip" type="button" data-f="saved" aria-pressed="false">Saved <span id="cSaved">0</span></button>
+      <button class="chip" type="button" data-f="empty" aria-pressed="false">Empty <span id="cEmpty">1000</span></button>
+      <button class="chip" type="button" data-f="ticked" aria-pressed="false">Ticked <span id="cTicked">0</span></button>
+    </div>
+    <div class="tools">
+      <button class="toolbtn" type="button" id="exCsv">Export CSV</button>
+      <button class="toolbtn" type="button" id="exBak">Backup</button>
+      <button class="toolbtn" type="button" id="restoreBtn">Restore</button>
+      <input type="file" id="restoreFile" accept=".json,application/json" hidden>
+    </div>
+  </header>
+  <p id="note" class="note" hidden></p>
+  <p id="none" class="none" hidden>No entries match your search.</p>
+  <main id="list"></main>
+</div>
+
+<div class="scrim" id="scrim" hidden>
+  <form class="dlg" id="pwForm" role="dialog" aria-modal="true" aria-labelledby="pwTitle">
+    <h2 id="pwTitle">Edit entry</h2>
+    <p>This entry is saved. Enter the password to change it.</p>
+    <label for="pw">Password</label>
+    <input id="pw" type="password" inputmode="numeric" autocomplete="off">
+    <p id="pwErr" class="err" role="alert" hidden>Wrong password. Try again.</p>
+    <div class="dlgacts">
+      <button type="button" class="btn" id="pwCancel">Cancel</button>
+      <button type="submit" class="btn primary" id="pwOk">Unlock</button>
+    </div>
+  </form>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+<script>
+(function () {
+  var TOTAL = 1000, PASS = '0000';
+  var LOCK_SVG = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg>';
+  var EMPTY = { name: '', phone: '', coupon: '', done: false };
+
+  function $(id) { return document.getElementById(id); }
+  function pad(n) { return String(n).padStart(4, '0'); }
+
+  var listEl = $('list');
+  var rows = [], byId = new Map();
+  var saved = new Map();
+  var couponIdx = new Map();
+  var col = null;
+  var filter = 'all', query = '';
+  var toastTimer = null;
+
+  function toast(msg) {
+    var t = $('toast');
+    t.textContent = msg; t.hidden = false;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { t.hidden = true; }, 2600);
+  }
+
+  function buildRow(n) {
+    var id = pad(n);
+    var el = document.createElement('article');
+    el.className = 'row';
+    el.id = 'r' + id;
+    el.innerHTML =
+      '<div class="stub">' +
+        '<label class="tick"><input type="checkbox" id="c' + id + '" aria-label="Tick entry ' + id + '"><span class="num">' + id + '</span></label>' +
+        '<span class="lock" hidden>' + LOCK_SVG + 'Saved</span>' +
+      '</div>' +
+      '<div class="f f-name"><label for="n' + id + '">Name</label><input id="n' + id + '" type="text" autocomplete="off" placeholder="Full name"></div>' +
+      '<div class="f f-phone"><label for="p' + id + '">Phone</label><input id="p' + id + '" type="tel" inputmode="tel" autocomplete="off" placeholder="Phone number"></div>' +
+      '<div class="f f-coupon"><label for="k' + id + '">Coupon no.</label><input id="k' + id + '" type="text" autocomplete="off" placeholder="Coupon number"></div>' +
+      '<div class="acts">' +
+        '<button type="button" class="btn edit" hidden>Edit</button>' +
+        '<button type="button" class="btn cancel" hidden>Cancel</button>' +
+        '<button type="button" class="btn primary save" hidden>Save</button>' +
+      '</div>' +
+      '<p class="warn" hidden></p>';
+    var r = {
+      n: n, id: id, el: el, mode: 'open', dirty: false, saving: false,
+      chk: el.querySelector('input[type="checkbox"]'),
+      inputs: { name: el.querySelector('.f-name input'), phone: el.querySelector('.f-phone input'), coupon: el.querySelector('.f-coupon input') },
+      lock: el.querySelector('.lock'),
+      btnEdit: el.querySelector('.edit'), btnSave: el.querySelector('.save'), btnCancel: el.querySelector('.cancel'),
+      warn: el.querySelector('.warn')
+    };
+    wire(r);
+    return r;
+  }
+
+  function readDraft(r) {
+    return {
+      name: r.inputs.name.value.trim(),
+      phone: r.inputs.phone.value.trim(),
+      coupon: r.inputs.coupon.value.trim(),
+      done: r.chk.checked
+    };
+  }
+  function base(r) {
+    var s = saved.get(r.id);
+    if (!s) return EMPTY;
+    return { name: String(s.name || ''), phone: String(s.phone || ''), coupon: String(s.coupon || ''), done: !!s.done };
+  }
+  function computeDirty(r) {
+    var d = readDraft(r), b = base(r);
+    r.dirty = d.name !== b.name.trim() || d.phone !== b.phone.trim() || d.coupon !== b.coupon.trim() || d.done !== b.done;
+  }
+  function refreshUi(r) {
+    computeDirty(r);
+    var locked = r.mode === 'locked', editing = r.mode === 'editing';
+    r.el.classList.toggle('locked', locked);
+    r.el.classList.toggle('done', r.chk.checked);
+    r.inputs.name.readOnly = locked;
+    r.inputs.phone.readOnly = locked;
+    r.inputs.coupon.readOnly = locked;
+    r.lock.hidden = !locked;
+    r.btnEdit.hidden = !locked;
+    r.btnCancel.hidden = !editing;
+    r.btnSave.hidden = locked || !(r.dirty || editing);
+  }
+  function fill(r) {
+    var b = base(r);
+    r.inputs.name.value = b.name;
+    r.inputs.phone.value = b.phone;
+    r.inputs.coupon.value = b.coupon;
+    r.chk.checked = b.done;
+    refreshUi(r);
+    updateWarn(r);
+  }
+  function syncRow(r) {
+    computeDirty(r);
+    var s = saved.get(r.id);
+    if (s) {
+      if (r.mode === 'open' && !r.dirty) r.mode = 'locked';
+      if (r.mode === 'locked') fill(r); else refreshUi(r);
+    } else {
+      if (r.mode !== 'open') r.mode = 'open';
+      if (!r.dirty) fill(r); else refreshUi(r);
+    }
+  }
+
+  function rebuildCoupons() {
+    couponIdx = new Map();
+    saved.forEach(function (s, id) {
+      var k = String(s.coupon || '').trim().toLowerCase();
+      if (!k) return;
+      var a = couponIdx.get(k);
+      if (!a) { a = []; couponIdx.set(k, a); }
+      a.push(id);
+    });
+  }
+  function updateWarn(r) {
+    var raw = r.inputs.coupon.value.trim(), k = raw.toLowerCase(), msg = '';
+    if (k) {
+      var others = (couponIdx.get(k) || []).filter(function (id) { return id !== r.id; });
+      if (others.length) msg = 'Coupon ' + raw + ' is also on ' + others.slice(0, 3).join(', ') + (others.length > 3 ? ' and more' : '') + '.';
+    }
+    r.warn.textContent = msg;
+    r.warn.hidden = !msg;
+  }
+
+  function updateStats() {
+    var filled = saved.size, ticked = 0;
+    saved.forEach(function (s) { if (s.done) ticked++; });
+    $('stText').innerHTML = '<b>' + filled + '</b> saved · <b>' + ticked + '</b> ticked · <b>' + (TOTAL - filled) + '</b> empty';
+    $('barFill').style.width = (filled / TOTAL * 100) + '%';
+    $('cSaved').textContent = filled;
+    $('cEmpty').textContent = TOTAL - filled;
+    $('cTicked').textContent = ticked;
+  }
+
+  function applyFilter() {
+    var q = query.trim().toLowerCase(), shown = 0;
+    for (var i = 0; i < rows.length; i++) {
+      var r = rows[i], s = saved.get(r.id), ok;
+      if (filter === 'saved') ok = !!s;
+      else if (filter === 'empty') ok = !s;
+      else if (filter === 'ticked') ok = !!(s && s.done);
+      else ok = true;
+      if (ok && q) {
+        var hay = (r.id + ' ' + r.inputs.name.value + ' ' + r.inputs.phone.value + ' ' + r.inputs.coupon.value).toLowerCase();
+        ok = hay.indexOf(q) !== -1;
+      }
+      r.el.hidden = !ok;
+      if (ok) shown++;
+    }
+    $('none').hidden = shown > 0;
+  }
+
+  async function save(r) {
+    if (r.saving) return;
+    var d = readDraft(r), had = saved.has(r.id);
+    var empty = !d.name && !d.phone && !d.coupon && !d.done;
+    r.saving = true; r.btnSave.disabled = true;
+    try {
+      if (empty) {
+        if (had) {
+          if (col) await col.doc(r.id).delete();
+          saved.delete(r.id);
+          toast('Entry ' + r.id + ' cleared');
+        }
+        r.mode = 'open';
+      } else {
+        var data = { n: r.n, name: d.name, phone: d.phone, coupon: d.coupon, done: d.done, updated: Date.now() };
+        if (col) await col.doc(r.id).set(data);
+        saved.set(r.id, data);
+        r.mode = 'locked';
+        toast('Entry ' + r.id + ' saved');
+      }
+      rebuildCoupons();
+      fill(r);
+      rows.forEach(updateWarn);
+      updateStats();
+    } catch (e) {
+      toast(e && e.code === 'invalid_argument'
+        ? 'You can view this list but not change it.'
+        : 'Could not save on this device. Free some space or leave private browsing.');
+      refreshUi(r);
+    } finally {
+      r.saving = false; r.btnSave.disabled = false;
+    }
+  }
+
+  function cancel(r) {
+    r.mode = saved.has(r.id) ? 'locked' : 'open';
+    fill(r);
+  }
+
+  /* Password dialog */
+  var pwRow = null, lastFocus = null;
+  var scrim = $('scrim'), pw = $('pw'), pwErr = $('pwErr');
+  function askPw(r) {
+    pwRow = r; lastFocus = document.activeElement;
+    $('pwTitle').textContent = 'Edit entry ' + r.id;
+    pwErr.hidden = true; pw.value = '';
+    scrim.hidden = false;
+    pw.focus();
+  }
+  function closePw(restore) {
+    scrim.hidden = true; pwRow = null;
+    if (restore && lastFocus && lastFocus.focus) lastFocus.focus({ preventScroll: true });
+  }
+  $('pwForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+    if (pw.value === PASS) {
+      var r = pwRow;
+      closePw(false);
+      if (r) {
+        r.mode = 'editing';
+        refreshUi(r);
+        r.inputs.name.focus({ preventScroll: true });
+      }
+    } else {
+      pwErr.hidden = false; pw.value = ''; pw.focus();
+    }
+  });
+  $('pwCancel').addEventListener('click', function () { closePw(true); });
+  scrim.addEventListener('click', function (e) { if (e.target === scrim) closePw(true); });
+  document.addEventListener('keydown', function (e) {
+    if (scrim.hidden) return;
+    if (e.key === 'Escape') { closePw(true); return; }
+    if (e.key === 'Tab') {
+      var f = [pw, $('pwCancel'), $('pwOk')], i = f.indexOf(document.activeElement);
+      e.preventDefault();
+      f[(i + (e.shiftKey ? f.length - 1 : 1)) % f.length].focus();
+    }
+  });
+
+  function wire(r) {
+    r.chk.addEventListener('click', function (e) {
+      if (r.mode === 'locked') { e.preventDefault(); askPw(r); }
+    });
+    r.chk.addEventListener('change', function () {
+      if (r.mode === 'open') save(r); else refreshUi(r);
+    });
+    ['name', 'phone', 'coupon'].forEach(function (k) {
+      var inp = r.inputs[k];
+      inp.addEventListener('input', function () { refreshUi(r); if (k === 'coupon') updateWarn(r); });
+      inp.addEventListener('keydown', function (e) { if (e.key === 'Enter' && r.mode !== 'locked') { e.preventDefault(); save(r); } });
+      inp.addEventListener('focus', function () { if (r.mode === 'locked') inp.blur(); });
+      inp.addEventListener('click', function () { if (r.mode === 'locked') askPw(r); });
+    });
+    r.btnEdit.addEventListener('click', function () { askPw(r); });
+    r.btnSave.addEventListener('click', function () { save(r); });
+    r.btnCancel.addEventListener('click', function () { cancel(r); });
+  }
+
+  /* Build the list */
+  var frag = document.createDocumentFragment();
+  for (var n = 1; n <= TOTAL; n++) {
+    var r = buildRow(n);
+    rows.push(r); byId.set(r.id, r); frag.appendChild(r.el);
+  }
+  listEl.appendChild(frag);
+  updateStats();
+
+  /* Header height for sticky offset */
+  var hdr = $('hdr');
+  function setHdr() { document.documentElement.style.setProperty('--hdr', hdr.offsetHeight + 'px'); }
+  setHdr();
+  if (window.ResizeObserver) new ResizeObserver(setHdr).observe(hdr);
+
+  /* Search, filter, jump */
+  var qTimer = null;
+  $('q').addEventListener('input', function (e) {
+    clearTimeout(qTimer);
+    qTimer = setTimeout(function () { query = e.target.value; applyFilter(); }, 120);
+  });
+  document.querySelectorAll('.chip').forEach(function (b) {
+    b.addEventListener('click', function () { setFilter(b.dataset.f); });
+  });
+  function setFilter(f) {
+    filter = f;
+    document.querySelectorAll('.chip').forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.f === f)); });
+    applyFilter();
+  }
+  $('jump').addEventListener('keydown', function (e) {
+    if (e.key !== 'Enter') return;
+    var v = parseInt(e.target.value, 10);
+    if (!(v >= 1 && v <= TOTAL)) { toast('Enter a number from 0001 to 1000.'); return; }
+    var r = byId.get(pad(v));
+    if (filter !== 'all' || query) {
+      filter = 'all'; query = ''; $('q').value = '';
+      document.querySelectorAll('.chip').forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.f === 'all')); });
+      applyFilter();
+    }
+    r.el.scrollIntoView({ block: 'start' });
+    r.el.classList.remove('flash');
+    void r.el.offsetWidth;
+    r.el.classList.add('flash');
+    e.target.blur();
+  });
+
+  /* Saved data: kept in this browser (localStorage) */
+  var KEY = 'coupon-register-v1';
+  function setSync(t) { $('sync').textContent = t; }
+  function showNote(t) { var n = $('note'); n.textContent = t; n.hidden = false; }
+  function persist() {
+    var o = {};
+    saved.forEach(function (v, k) { o[k] = v; });
+    localStorage.setItem(KEY, JSON.stringify(o));
+  }
+  col = {
+    doc: function (id) {
+      return {
+        set: function (data) { saved.set(id, data); persist(); return Promise.resolve(); },
+        delete: function () { saved.delete(id); persist(); return Promise.resolve(); }
+      };
+    }
+  };
+  function loadAll(obj) {
+    var c = 0;
+    Object.keys(obj || {}).forEach(function (id) {
+      if (byId.has(id) && obj[id] && typeof obj[id] === 'object') { saved.set(id, obj[id]); c++; }
+    });
+    return c;
+  }
+  function refreshAll() {
+    rebuildCoupons();
+    rows.forEach(function (r) { syncRow(r); updateWarn(r); });
+    updateStats();
+    applyFilter();
+  }
+  try { loadAll(JSON.parse(localStorage.getItem(KEY) || '{}')); } catch (e) {}
+  refreshAll();
+  setSync('This device');
+  showNote('Entries are saved in this browser only. Tap Backup now and then, and Restore on another phone.');
+
+  function download(name, text, type) {
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([text], { type: type }));
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+  }
+  function csvCell(v) {
+    v = String(v == null ? '' : v);
+    return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
+  }
+  $('exCsv').addEventListener('click', function () {
+    var out = ['Number,Ticked,Name,Phone,Coupon'];
+    rows.forEach(function (r) {
+      var s = saved.get(r.id);
+      if (!s) return;
+      out.push([r.id, s.done ? 'Yes' : 'No', s.name, s.phone, s.coupon].map(csvCell).join(','));
+    });
+    download('coupon-register.csv', '﻿' + out.join('\n'), 'text/csv');
+  });
+  $('exBak').addEventListener('click', function () {
+    var o = {};
+    saved.forEach(function (v, k) { o[k] = v; });
+    download('coupon-backup.json', JSON.stringify(o), 'application/json');
+  });
+  $('restoreBtn').addEventListener('click', function () { $('restoreFile').click(); });
+  $('restoreFile').addEventListener('change', function (e) {
+    var f = e.target.files && e.target.files[0];
+    if (!f) return;
+    var fr = new FileReader();
+    fr.onload = function () {
+      try {
+        var c = loadAll(JSON.parse(fr.result));
+        persist();
+        refreshAll();
+        toast(c + ' entries restored');
+      } catch (err) { toast('That file is not a valid backup.'); }
+    };
+    fr.readAsText(f);
+    e.target.value = '';
+  });
+})();
+</script>
+</body>
+</html>
